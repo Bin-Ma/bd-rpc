@@ -1,2 +1,2 @@
-This is PRC (Phylogeny Rapid Clustering) program.
+This is bd-rpc (Bases dependent Rapid Phylogenetic Clustering) program.
 
