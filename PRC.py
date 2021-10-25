@@ -222,15 +222,14 @@ def information_clustering(seq_change_matrix_PCA,seq_id,distance_exponent = 2, c
         information = pd.read_csv(clustering_information, sep=',', header=None)
         ###information -- seq_id, clade, subclade .....
         
-        cluster_level_number = len(information.loc[0]) - 1 ##remove seqid
+        cluster_level_number = len(information.loc[0])##remove seqid
         
         
         seq_id = pd.DataFrame(seq_id)
         information = pd.merge(seq_id,information,on=0) ##match information
         
                 
-      
-        for z in range(1,3):
+        for z in range(1,cluster_level_number):
             if z == 1:
                 cluster_information_index = []
                 for i in range(len(pd.value_counts(information[z]).index)):
@@ -476,16 +475,16 @@ def ML_tree_clustering(ML_tree_location,seq_change_matrix_PCA,seq_id,max_cluster
         
 
 #####Clustering function
-def add_aligned_sequence(add_seq_location, aligned_seq_location,output_location = '',thread = 80):
+def add_aligned_sequence(add_seq_location, aligned_seq_location,output_location = '',thread = 1):
     import os 
     if output_location == '':
         output_location = aligned_seq_location + '.combine'
         
-    os.system("mafft --quiet --thread %s --add %s --reorder %s > %s" %(thread, add_seq_location, aligned_seq_location, output_location))
+    os.system("mafft  --thread %s --add %s --reorder %s > %s" %(thread, add_seq_location, aligned_seq_location, output_location))
     
     return 
 
-def gap_t_test(add_seq_location, aligned_seq_location, output_location = '', cutoff_pvalue = 0.01):
+def gap_t_test(add_seq_location, aligned_seq_location, output_location = '', cutoff_pvalue = 0.01,test_model = 't-test'):
     from scipy import stats
     from Bio import SeqIO
     import numpy as np
@@ -505,7 +504,7 @@ def gap_t_test(add_seq_location, aligned_seq_location, output_location = '', cut
         before_id.append(seq_record.id)
         for i in range(len(seq_record.seq)):
             if seq_record.seq[i] == '-':
-                 tmp.append(gap)
+                tmp.append(gap)
             else:
                 tmp.append(0)
         before_information.append(tmp)
@@ -540,35 +539,59 @@ def gap_t_test(add_seq_location, aligned_seq_location, output_location = '', cut
     before_match_information = np.array(before_match_information)
     after_match_information = np.array(after_match_information)
     
-    
+    pvalue_list = []
+    dif_list = []
     ###distinguish different sequence
     before_test = sum(before_match_information.T)
     
     for i in range(len(add_seq_id)):
         
         add_seq_information = after_information[after_id.index(add_seq_id[i]),:]
-        after_test = np.zeros(after_match_information.shape)
         
-        for j in range(after_match_information.shape[0]):
-            after_test[j,:] =  after_match_information[j,:] - add_seq_information
+        after_match_information_combine = np.vstack((after_match_information,add_seq_information))
+        delete_same_gap = len(np.where(sum(after_match_information_combine)==after_match_information_combine.shape[0])[0])
         
-        after_test = sum(after_test.T)
+        after_test = sum(after_match_information.T) - delete_same_gap 
+            
         ##calcuate paired t test
-        pvalue = stats.ttest_rel(before_test,after_test)[1]
-        
-        if pvalue == 'nan':
-            new_seqid.append(add_seq_id[i])
-            print(add_seq_id[i] + ' IN Database')
-        
-        else:
-            if float(pvalue) >= float(cutoff_pvalue):
+        if test_model == 't-test':
+            pvalue = stats.ttest_rel(before_test,after_test)[1]
+            pvalue_list.append(pvalue)
+            dif_list.append(after_test[0]-before_test[0])
+            if str(pvalue) == 'nan':
                 new_seqid.append(add_seq_id[i])
                 print(add_seq_id[i] + ' IN Database')
+            
             else:
-                print(add_seq_id[i] + ' OUT Database')
-    return new_seqid
+                if float(pvalue) >= float(cutoff_pvalue):
+                    new_seqid.append(add_seq_id[i])
+                    print(add_seq_id[i] + ' IN Database')
+                else:
+                    print(add_seq_id[i] + ' OUT Database')
+        elif test_model == 'wilcoxon':
+            try:
+                pvalue = stats.wilcoxon(before_test,after_test)[1]
+                pvalue_list.append(pvalue)
+            except:
+                ##all the same
+                new_seqid.append(add_seq_id[i])
+                print(add_seq_id[i] + ' IN Database')
+                pvalue_list.append(1)
+                continue
+                
+            if str(pvalue) == 'nan':
+                new_seqid.append(add_seq_id[i])
+                print(add_seq_id[i] + ' IN Database')
+            
+            else:
+                if float(pvalue) >= float(cutoff_pvalue):
+                    new_seqid.append(add_seq_id[i])
+                    print(add_seq_id[i] + ' IN Database')
+                else:
+                    print(add_seq_id[i] + ' OUT Database')
+    return [new_seqid,pvalue_list]
 
-def clustering_information_tree(database_location,aligned_seq_location,combine_seq_location,new_seqid,convert_rule_location,identity_cutoff=0.9):
+def clustering_information_tree(database_location,aligned_seq_location,combine_seq_location,new_seqid,convert_rule_location,identity_cutoff=0):
     from Bio import SeqIO
     import numpy as np
     from scipy.spatial.distance import pdist, squareform
@@ -682,7 +705,7 @@ def clustering_information_tree(database_location,aligned_seq_location,combine_s
     for i in range(len(clustering_DBsearch)):
         clustering_result_total.append([clustering_DBsearch_id[i],clustering_DBsearch_total[i][:]])
     
-    return clustering_result
+    return [clustering_result,clustering_result_total,clustering_density]
 
 def add_tree(clustering_result,ML_tree_location,aligned_seq_location,combine_seq_location):
     from Bio import SeqIO
@@ -866,8 +889,7 @@ seq_change_matrix_PCA = PCA_improved(seq_change_matrix)
 result = information_clustering(seq_change_matrix_PCA,seq_id,distance_exponent=2,clustering_method='single',clustering_information=clustering_information)
 
 
-result = ML_tree_clustering(ML_tree_location,
-                            seq_change_matrix_PCA=seq_change_matrix_PCA,seq_id=seq_id)
+result = ML_tree_clustering(ML_tree_location,seq_change_matrix_PCA=seq_change_matrix_PCA,seq_id=seq_id)
 
 ##write convert matrix
 np.savetxt(convert_rule_location,convert_matrix,delimiter=',')
@@ -887,7 +909,7 @@ with open(database_location,'w') as f:
 
 #write information database
 with open('/Users/mabin/Downloads/information_cluster_result','w') as f:
-    f.write('PCA_on'+'/'+''+','+'2'+'\n')
+    f.write('PCA_on'+'/'+'max'+','+'2'+'\n')
     for i in range (len(result)):
         seq_id = result[i][0]
         identity = result[i][3]
@@ -902,16 +924,26 @@ with open('/Users/mabin/Downloads/information_cluster_result','w') as f:
 add_aligned_sequence(addition_seq_location, aligned_seq_location,combine_seq_location,thread=56)
 
 
-new_seqid = gap_t_test(addition_seq_location,aligned_seq_location,output_location=combine_seq_location,cutoff_pvalue=0)
+new_seqid,pvalue_list = gap_t_test(addition_seq_location,aligned_seq_location,cutoff_pvalue=0,test_model='wilcoxon',output_location=combine_seq_location)
 
 
 
-clustering_result = clustering_information_tree(database_location,aligned_seq_location=aligned_seq_location,combine_seq_location=combine_seq_location,
+clustering_result,clustering_result_total,clustering_density = clustering_information_tree(database_location,aligned_seq_location=aligned_seq_location,combine_seq_location=combine_seq_location,
                                                 new_seqid=new_seqid,convert_rule_location=convert_rule_location)
    
 tree = add_tree(clustering_result, ML_tree_location, aligned_seq_location, combine_seq_location)
 
 Phylo.write(tree,'./tree_test.nwk','newick')
+
+
+
+
+
+
+
+
+
+
 
 
 
