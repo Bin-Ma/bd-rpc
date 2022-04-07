@@ -42,10 +42,10 @@ Usage:
 |-PCA [on or off]| Use PCA program to increase the speed or not. (default: 'on')|
 |-PCAcomponents|if "-PCA" is on, '-PCAcomponents' can be set as the PCA components. (<=number of the sequences and <= length of recoding sequences) (default: max)|
 |-dis_exponent|The exponent of minkowski distance. (default: 2)|
-|-clustering_method|The method of hierarchical clustering. (single, average, complete, ward) (default: single)|
+|-Cmethod|The method of hierarchical clustering. (single, average, complete, ward) (default: single)|
 |-tax_information|The location of sequences taxonomy information. (csv file) [seq_id,clade,subclade,sub-subclade....]|
 |-phy_information|The location of tree with newick format.|
-|-clustering_number|If '-tax_information and -phy_information' not apply, the numebr of cluster will be calcuated without identity. (default: 5)|
+|-Cnumber|If '-tax_information and -phy_information' not apply, the numebr of cluster will be calcuated without identity. (default: 5)|
 |-bootstrap_cutoff|The cutoff value to stop the tree traversal. (default: 90)|
 
 
