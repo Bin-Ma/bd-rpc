@@ -4,6 +4,51 @@
 * After the Bd-RPC database establishment, the new sequences will be added into the aligned sequences using MAFFT and the indel characters will be counted for foreign sequences’ recognition to distinguish whether the new sequences belong to the database. Then, the remainder sequences will be classified according to the Bd-RPC database through the Matching Identity cutoff and clusters’ density. Finally, for the phylogenetic database, the new sequences can be placed into the phylogenetic tree based on the clustering results.<br>
 
 ## Installation
+### Python dependencies
+Python 3+<br>
+
+* numpy
+* scipy
+* pandas
+* biopython
+* scikit-learn
+* csv
+<br>
+
+If you're having difficulties constructing the essential scientific Python packages, we recommend using the [conda](https://docs.conda.io/en/latest/miniconda.html) package/environment manager. <br>
+
+    conda create -n bd_rpc python=3<br>
+    conda activate bd_rpc<br>
+    conda install numpy scipy pandas biopython scikit-learn csv
+### Download
+    git clone
+    cd bd_rpc/bin
+
+## Manual
+This program can recode the aligned sequences to a list of number and match to the background information or phylogenetic tree through hierarchical clustering. For increasing the speed of this program, PCA improvement module can be selected for calcuating the distance between sequences.<br>
+### Part 1 -- Make Database
+BdRPC_MD.py<br><br>
+Usage:
+
+    BdRPC_MD.py [options] -align <location> -o <location>
+
+<br>
+
+| Basic options: |   | 
+| :-----| :---- |
+| -align | Location of aligned sequences. (required) |
+| -o | Directory to store the result. (required) |
+| -seq_convert |Location of convert matrix, the script will use (1-pi,0,0,0,1-pi,0) as default (method 1).|
+|-PCA [on or off]| Use PCA program to increase the speed or not. (default: 'on')|
+|-PCAcomponents|if "-PCA" is on, '-PCAcomponents' can be set as the PCA components. (<=number of the sequences and <= length of recoding sequences) (default: max)|
+|-dis_exponent|The exponent of minkowski distance. (default: 2)|
+|-clustering_method|The method of hierarchical clustering. (single, average, complete, ward) (default: single)|
+|-tax_information|The location of sequences taxonomy information. (csv file) [seq_id,clade,subclade,sub-subclade....]|
+|-phy_information|The location of tree with newick format.|
+|-clustering_number|If '-tax_information and -phy_information' not apply, the numebr of cluster will be calcuated without identity. (default: 5)|
+|-bootstrap_cutoff|The cutoff value to stop the tree traversal. (default: 90)|
+
+
 
 
 
