@@ -15,7 +15,7 @@ Basic options:
   -o			              directory to store the result. (required)
   -seq_convert		      location of convert matrix, the script will use (1-pi,0,0,0,1-pi,0) as default (method 1).
   -PCA <on or off>      Use PCA program to increase the speed or not. (default: 'on')
-  -PCAcomponents        if "-PCA" is on, '-PCAcomponents' can be set as the PCA components. (<=number of the sequences and <= length of reocding sequences) (default: max)
+  -PCAcomponents        if "-PCA" is on, '-PCAcomponents' can be set as the PCA components. (<=number of the sequences and <= length of recoding sequences) (default: max)
   -dis_exponent         The exponent of minkowski distance. (default: 2)
   -clustering_method    The method of hierarchical clustering. (single, average, complete, ward) (default: single)
   -tax_information      The location of sequences taxonomy information. (csv file) [seq_id,clade,subclade,sub-subclade....]
@@ -35,10 +35,10 @@ Basic options:
   -new                  location of new sequences. (required)
   -o                    directory to store the result. (required)
   -db			              location of Bd-RPC database. (required)
-  -IDfold               The fold of median value in InDel test. (default: 1.1)
-  -phy_information			location of phylogentics tree. (if the tree is available, the new sequences will be inserted into the phylogentics tree)
+  -IDfold               The fold of median value in Indel Test. (default: 1.1)
+  -phy_information			location of phylogentics tree. (if the tree is available, the new sequences will be inserted into the phylogenetic tree)
   -identity_cutoff      The cutoff value of clusters' identity (0~1, default: 0.8).
-  -density_fold         The cutoff fold of clusters' density for new samples clustering (default: 1.5).
+  -density_fold         The fold of clusters' density for new samples clustering (default: 1.5).
   -threads              Threads of mafft align and iqtree (int, default: 1).  
 
 
