@@ -17,8 +17,8 @@ Python 3+<br>
 
 If you're having difficulties constructing the essential scientific Python packages, we recommend using the [conda](https://docs.conda.io/en/latest/miniconda.html) package/environment manager. <br>
 
-    conda create -n bd_rpc python=3<br>
-    conda activate bd_rpc<br>
+    conda create -n bd_rpc python=3
+    conda activate bd_rpc
     conda install numpy scipy pandas biopython scikit-learn csv
 ### Download
     git clone https://github.com/Bin-Ma/bd-rpc.git
