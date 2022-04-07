@@ -602,7 +602,7 @@ except:
 
 #clustering_method
 try:
-    index = sys.argv.index('-clustering_method')+1
+    index = sys.argv.index('-Cmethod')+1
     clustering_method  = sys.argv[index]
 except:
     clustering_method = 'single'
@@ -652,7 +652,7 @@ except:
 
 #clustering_number
 try:
-    index = sys.argv.index('-clustering_number')+1
+    index = sys.argv.index('-Cnumber')+1
     clustering_number  = sys.argv[index]
 except:
     clustering_number = 5
