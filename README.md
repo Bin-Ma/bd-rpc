@@ -28,6 +28,24 @@ If you're having difficulties constructing the essential scientific Python packa
 ### Download
     git clone https://github.com/Bin-Ma/bd-rpc.git
     cd bd-rpc/bin
+    # Bd-RPC is an python program and can be used directly.
+## Example 
+### Make Database 
+    cd bd-rpc
+
+    #Taxonomy database (about 5 min)
+    ./bin/BdRPC_MD.py -align ./example/S_gene_align.fasta -o ./example/ -tax_information ./example/S_gene_taxonomy.csv
+
+    #Phylogentic database (about 5 min)
+    ./bin/BdRPC_MD.py -align ./example/S_gene_align.fasta -o ./example/ -phy_information ./example/S_gene.nwk
+### Clustering New Sequence
+    #Without phylogenetic tree (about 5 min)
+    ./bin/BdRPC_CNS.py -align ./example/S_gene_align.fasta -new ./example/S_gene_new.fasta -db ./example/database -o ./example/
+
+    #With phylogenetic tree （about 3 hours with 1 thread）
+    ./bin/BdRPC_CNS.py -align ./example/S_gene_align.fasta -new ./example/S_gene_new.fasta -db ./example/database -o ./example/ -phy_information ./example/S_gene.nwk
+
+    
 
 ## Manual
 This program can recode the aligned sequences to a list of number and match to the background information or phylogenetic tree through hierarchical clustering. For increasing the speed of this program, PCA improvement module can be selected for calcuating the distance between sequences.<br>
