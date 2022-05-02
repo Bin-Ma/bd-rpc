@@ -5,6 +5,10 @@
 * The online toolkit is available on [www.bd-rpc.xyz](http://www.bd-rpc.xyz)
 
 ## Installation
+### OS Requirements
+This package is supported for macOS and Linux. The package has been tested on the following systems:
+* macOS: Mojave (10.14.1)
+* Linux: Ubuntu (18.04.5)
 ### Python dependencies
 Python 3+<br>
 

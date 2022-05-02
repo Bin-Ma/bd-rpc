@@ -481,12 +481,12 @@ def add_tree(clustering_result,ML_tree_location,aligned_seq_location,combine_seq
             new_tree.root_at_midpoint()
             os.system('rm ./tmp_out.*')
         
-        Phylo.write(new_tree.clade,'./tree/%s' % tree_location,'newick')
+        # Phylo.write(new_tree.clade,'./%s' % tree_location,'newick')
         
-        new_location = './tree/%s' % tree_location+'.csv'
-        with open(new_location ,'w') as f:
-            for h in range(len(add_seq_id)):
-                f.write(str(add_seq_id[h])+'\n')
+        # new_location = './%s' % tree_location+'.csv'
+        # with open(new_location ,'w') as f:
+        #     for h in range(len(add_seq_id)):
+        #         f.write(str(add_seq_id[h])+'\n')
             
         tree_location_change = 'tree'
         for j in range(len(list(tree_location))):
@@ -584,7 +584,7 @@ except:
 
 #database location
 try:
-    index = sys.argv.index('-database')+1
+    index = sys.argv.index('-db')+1
     database_location  = sys.argv[index]
     database = []
     with open(database_location+'.match','r') as f:
@@ -707,7 +707,14 @@ clustering_result,clustering_result_total,clustering_density = clustering_inform
                                                                                            density_fold=density_fold)
 
 
-
+with open(output_location+'clustering_result.csv','w') as f:
+    for i in range(len(clustering_result_total)):
+        f.write(str(clustering_result_total[i][0])+',')
+        for j in range(len(clustering_result_total[i][1])):
+            f.write(str(clustering_result_total[i][1][j])+',')
+        f.write(str(clustering_density[i])+'\n')
+        
+        
 if  phy_information != '':                                                                                                                                                                                 
     try:
         combine_tree = add_tree(clustering_result,
@@ -721,12 +728,7 @@ if  phy_information != '':
     except:
         print('Please check the input database and phylogenetic tree')
 
-with open(output_location+'clustering_result.csv','w') as f:
-    for i in range(len(clustering_result_total)):
-        f.write(str(clustering_result_total[i][0])+',')
-        for j in range(len(clustering_result_total[i][1])):
-            f.write(str(clustering_result_total[i][1][j])+',')
-        f.write(str(clustering_density[i])+'\n')
+
     
     
 

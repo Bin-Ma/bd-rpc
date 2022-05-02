@@ -14,7 +14,6 @@ BdPRC_MD.py
 
 #####Make Database function
 def calcuate_bases_frequency(aligned_seq_location):
-    """这是第一个函数"""
     from Bio import SeqIO
     A = []
     C = []
