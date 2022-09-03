@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-BdPRC_MD.py
+BdRPC_MD.py
 
                     Bd-RPC 
 (Bases dependent Rapid Phylogenetic Clustering)
@@ -11,7 +11,6 @@ BdPRC_MD.py
                                 
                                 Author: Ma Bin
 '''
-
 #####Make Database function
 def calcuate_bases_frequency(aligned_seq_location):
     from Bio import SeqIO
@@ -50,7 +49,7 @@ def calcuate_bases_frequency(aligned_seq_location):
            'Frequency T : '+ str(freq_T))
     return [freq_A,freq_C,freq_G,freq_T],seq_id,sequence_out
 
-def bases_convert (pi, sequence, convert_rule_location = '' ):
+def bases_convert(pi, sequence, convert_rule_location = '' ):
     import numpy as np
     from Bio import SeqIO
     if convert_rule_location == '':
@@ -58,31 +57,6 @@ def bases_convert (pi, sequence, convert_rule_location = '' ):
         C = np.array([0,1,0,0,0,1])* (1-pi[1])
         G = np.array([0,0,1,0,1,0])* (1-pi[2])
         T = np.array([0,0,0,1,0,1])* (1-pi[3])
-        
-        # A = np.array([1,0,0,0,1,0])
-        # C = np.array([0,1,0,0,0,1])
-        # G = np.array([0,0,1,0,1,0])
-        # T = np.array([0,0,0,1,0,1])
-        
-        # A = np.array([1,0,0,0])* (1-pi[0])
-        # C = np.array([0,1,0,0])* (1-pi[1])
-        # G = np.array([0,0,1,0])* (1-pi[2])
-        # T = np.array([0,0,0,1])* (1-pi[3])
-        
-        # A = np.array([1,0,0,0])
-        # C = np.array([0,1,0,0])
-        # G = np.array([0,0,1,0])
-        # T = np.array([0,0,0,1])
-        
-        # A = np.array([1,0,0,0,1,0])* (pi[0])
-        # C = np.array([0,1,0,0,0,1])* (pi[1])
-        # G = np.array([0,0,1,0,1,0])* (pi[2])
-        # T = np.array([0,0,0,1,0,1])* (pi[3])
-        
-        # A = np.array([1,0,0,0])* (pi[0])
-        # C = np.array([0,1,0,0])* (pi[1])
-        # G = np.array([0,0,1,0])* (pi[2])
-        # T = np.array([0,0,0,1])* (pi[3])
     else:
         convert_rule = np.loadtxt(convert_rule_location ,delimiter = ',',encoding = 'utf-8-sig') ###sort by A C G T
         A = convert_rule[0,:]
@@ -102,60 +76,12 @@ def bases_convert (pi, sequence, convert_rule_location = '' ):
     V = (A + C + G)/3
     gap = N = (A + C + G + T)/4
     
-    
+    convert_dict = {'a':A,'c':C,'g':G,'t':T,'-':gap,'r':R,'y':Y,'s':S,'w':W,'k':K,'m':M,'b':B,'d':D,'h':H,'v':V,'n':N}
     seq_change_matrix = []
     
     for i in range(len(sequence)):
-        tmp_seq = []
-        for j in  range(len(sequence[i])):
-            if sequence[i][j] == 'a':
-                tmp_seq.append(A)
-            
-            if sequence[i][j] == 'c':
-                tmp_seq.append(C)
-            
-            if sequence[i][j] == 'g':
-                tmp_seq.append(G)
-            
-            if sequence[i][j] == 't':
-                tmp_seq.append(T)
-            
-            if sequence[i][j] == '-':
-                tmp_seq.append(gap)
-            
-            if sequence[i][j] == 'r':
-                tmp_seq.append(R)
-                    
-            if sequence[i][j] == 'y':
-                tmp_seq.append(Y)
-        
-            if sequence[i][j] == 's':
-                tmp_seq.append(S)
-    
-            if sequence[i][j] == 'w':
-                tmp_seq.append(W)
-    
-            if sequence[i][j] == 'k':
-                tmp_seq.append(K)
-            
-            if sequence[i][j] == 'm':
-                tmp_seq.append(M)
-    
-            if sequence[i][j] == 'b':
-                tmp_seq.append(B)            
-    
-            if sequence[i][j] == 'd':
-                tmp_seq.append(D)
-    
-            if sequence[i][j] == 'h':
-                tmp_seq.append(H)
-    
-            if sequence[i][j] == 'v':
-                tmp_seq.append(V)
-                
-            if sequence[i][j] == 'n':
-                tmp_seq.append(N)
-        
+        tmp_seq = [convert_dict[k] if k in convert_dict else k for k in list(sequence[i])]
+              
         tmp_seq = np.array(tmp_seq)
         tmp_seq = tmp_seq.reshape(1,tmp_seq.shape[0]*tmp_seq.shape[1])
     
@@ -163,9 +89,8 @@ def bases_convert (pi, sequence, convert_rule_location = '' ):
         
     seq_change_matrix = np.array(seq_change_matrix)
     
-    
     return seq_change_matrix,[A,C,G,T]
-
+    
 def PCA_improved(seq_change_matrix,PCA_components = 'max'):
     
     from sklearn.decomposition import PCA
@@ -186,8 +111,162 @@ def PCA_improved(seq_change_matrix,PCA_components = 'max'):
     #print ('PCA explained variance = ' + str(sum(pca.explained_variance_ratio_)))
     
     return seq_change_matrix_PCA
+
     
 def information_clustering(seq_change_matrix_PCA,seq_id,distance_exponent = 2, clustering_method = 'single',clustering_information = '',cluster_number = 2):
+    ####make Database
+    from sklearn.cluster import AgglomerativeClustering
+    from scipy.spatial.distance import pdist, squareform
+    import numpy as np 
+    import pandas as pd
+    ####calcuate distance matrix
+    if  distance_exponent == 2:
+        distance_matrix = pdist(seq_change_matrix_PCA,'euclidean')
+        distance_matrix = squareform(distance_matrix)
+    elif distance_exponent == 1:
+        distance_matrix = pdist(seq_change_matrix_PCA,'cityblock')
+        distance_matrix = squareform(distance_matrix)
+    else:
+        distance_matrix = pdist(seq_change_matrix_PCA,'minkowski',p=distance_exponent)
+        distance_matrix = squareform(distance_matrix)
+    ####
+        
+        
+    ###clustering
+    output_id = []
+    output_location = []
+    output_identity = []
+    output_index = []
+    output_density = []
+    ### identity = jaccard value
+    
+    
+    if clustering_information == '':
+        clustering = AgglomerativeClustering(n_clusters = cluster_number,affinity = 'precomputed',
+                                             linkage = clustering_method).fit(distance_matrix)
+        for i in range(cluster_number):
+            output_id.append('cluster%s' % i)
+            output_location.append(np.where(clustering.labels_==i))
+            output_identity.append(1)
+            output_density.append(np.max(distance_matrix[np.where(clustering.labels_==i)[0],:][:,np.where(clustering.labels_==i)[0]]))
+    
+    else:
+        ###input information 
+        information = pd.read_csv(clustering_information, sep=',', header=None)
+        ###information -- seq_id, clade, subclade .....
+        
+        cluster_level_number = len(information.loc[0])##remove seqid
+        
+        
+        seq_id = pd.DataFrame(seq_id)
+        information = pd.merge(seq_id,information,on=0) ##match information
+        
+                
+        for z in range(1,cluster_level_number):
+            if z == 1:
+                cluster_information_index = []
+                for i in range(len(pd.value_counts(information[z]).index)):
+                     #   clustering_number_remove += 1
+                    cluster_information_index.append(pd.value_counts(information[z]).index[i])###input information index 
+                
+                ###Matching Identity -> Jaccard A n B/A U B
+                
+                tmp_cluster_identity = [[] for i in range(len(cluster_information_index))]
+                tmp_cluster_location = [[] for i in range(len(cluster_information_index))]
+                
+                if len(cluster_information_index)*3 > distance_matrix.shape[0]:
+                    max_clustering_number = distance_matrix.shape[0]
+                else:
+                    max_clustering_number = len(cluster_information_index)*3
+                
+                for clustering_number in range(1,max_clustering_number):
+                    
+                    clustering = AgglomerativeClustering(n_clusters = clustering_number,affinity = 'precomputed',
+                                         linkage = clustering_method).fit(distance_matrix)
+                
+                    for i in range(clustering_number):
+                        for j in range(len(pd.value_counts(information[z][list(np.where(clustering.labels_ == i)[0])]).index)):
+                            match_information_index = cluster_information_index.index(pd.value_counts(information[z][list(np.where(clustering.labels_ == i)[0])]).index[j])
+                            
+                            tmp_cluster_map_number = pd.value_counts(information[z][list(np.where(clustering.labels_ == i)[0])])[j]
+                            tmp_cluster_total_number = sum(pd.value_counts(information[z][list(np.where(clustering.labels_ == i)[0])]))
+                            total_information_number = len(information[information[1] == cluster_information_index[match_information_index]])
+                            identity = tmp_cluster_map_number / (tmp_cluster_total_number+total_information_number-tmp_cluster_map_number)
+                            
+                            tmp_cluster_identity[match_information_index].append(identity)
+                            
+                            tmp_cluster_location[match_information_index].append(list(np.where(clustering.labels_ == i)[0]))
+                            
+                    
+                for i in range (len(tmp_cluster_identity)):
+                    max_identity = max(tmp_cluster_identity[i])
+                    max_identity_index = np.where(np.array(tmp_cluster_identity[i]) == max_identity)[0][0]
+                    
+                    output_id.append(cluster_information_index[i])
+                    output_identity.append(max_identity)
+                    output_location.append(tmp_cluster_location[i][max_identity_index])
+                    output_index.append(z)
+                    output_density.append(np.max(distance_matrix[tmp_cluster_location[i][max_identity_index],:][:,tmp_cluster_location[i][max_identity_index]]))
+                    
+            else:
+                clustering_index = z - 1
+                for y in range (len(np.where(np.array(output_index)== clustering_index)[0])):
+                    ##change distance matrix by output id
+                    distance_matrix_change = distance_matrix[output_location[np.where(np.array(output_index)==clustering_index)[0][y]],:][:,output_location[np.where(np.array(output_index)==clustering_index)[0][y]]]
+                    
+                    information_change = information[z][output_location[np.where(np.array(output_index)==clustering_index)[0][y]]]
+                        
+                    cluster_information_index = []
+                    for i in range(len(pd.value_counts(information_change).index)):
+                         #   clustering_number_remove += 1
+                        cluster_information_index.append(pd.value_counts(information_change).index[i])###input information index 
+                    
+                    ###identity -> Jaccard A n B/A U B
+                    
+                    tmp_cluster_identity = [[] for i in range(len(cluster_information_index))]
+                    tmp_cluster_location = [[] for i in range(len(cluster_information_index))]
+                    
+                    if len(cluster_information_index)*3 > distance_matrix_change.shape[0]:
+                        max_clustering_number = distance_matrix_change.shape[0]
+                    else:
+                        max_clustering_number = len(cluster_information_index)*3
+                        
+                    for clustering_number in range(1,max_clustering_number):
+                        
+                        clustering = AgglomerativeClustering(n_clusters = clustering_number,affinity = 'precomputed',
+                                             linkage = clustering_method).fit(distance_matrix_change)
+                    
+                        for i in range(clustering_number):
+                            for j in range(len(pd.value_counts(information_change[information_change.index[list(np.where(clustering.labels_ == i)[0])]]).index)):
+                                match_information_index = cluster_information_index.index(pd.value_counts(information_change[information_change.index[list(np.where(clustering.labels_ == i)[0])]]).index[j])
+                                
+                                tmp_cluster_map_number = pd.value_counts(information_change[information_change.index[list(np.where(clustering.labels_ == i)[0])]])[j]
+                                tmp_cluster_total_number = sum(pd.value_counts(information_change[information_change.index[list(np.where(clustering.labels_ == i)[0])]]))
+                                total_information_number = len(information_change[information_change == cluster_information_index[match_information_index]])
+                                identity = tmp_cluster_map_number / (tmp_cluster_total_number+total_information_number-tmp_cluster_map_number)
+                                
+                                tmp_cluster_identity[match_information_index].append(identity)
+                                
+                                tmp_cluster_location[match_information_index].append(information_change.index[list(np.where(clustering.labels_ == i)[0])])
+                                
+                    if tmp_cluster_identity != [[]]:
+                        for i in range (len(tmp_cluster_identity)):
+                            max_identity = max(tmp_cluster_identity[i])
+                            max_identity_index = np.where(np.array(tmp_cluster_identity[i]) == max_identity)[0][0]
+                            
+                            output_id.append(cluster_information_index[i])
+                            output_identity.append(max_identity)
+                            output_location.append(tmp_cluster_location[i][max_identity_index])
+                            output_index.append(z)
+                            output_density.append(np.max(distance_matrix[tmp_cluster_location[i][max_identity_index],:][:,tmp_cluster_location[i][max_identity_index]]))
+        ##################################################
+    result = []
+    for i in range(len(output_id)):
+        result.append([output_id[i],output_location[i],output_index[i],output_identity[i],output_density[i]])
+    return result
+
+   
+def information_clustering_old(seq_change_matrix_PCA,seq_id,distance_exponent = 2, clustering_method = 'single',clustering_information = '',cluster_number = 2):
     ####make Database
     from sklearn.cluster import AgglomerativeClustering
     from scipy.spatial.distance import pdist, squareform
@@ -420,7 +499,7 @@ def ML_tree_clustering(ML_tree_location,seq_change_matrix_PCA,seq_id,max_cluster
             total_result2 = calcuate_identity_density(tree_id,seq_id,seq_id_location,distance_matrix,max_cluster_number,clustering_method)
 
 
-            if total_result1[2] > total_result2[2]:
+            if float(total_result1[2]) > float(total_result2[2]):
                 total_result = total_result1
             else:
                 total_result = total_result2
@@ -437,7 +516,7 @@ def ML_tree_clustering(ML_tree_location,seq_change_matrix_PCA,seq_id,max_cluster
             distance_matrix2 = distance_matrix[seq_id_location2,:][:,seq_id_location2]
             total_result2 = calcuate_identity_density(tree_id,seq_id,seq_id_location2,distance_matrix2,max_cluster_number,clustering_method)
             
-            if total_result1[2] > total_result2[2]:
+            if float(total_result1[2]) > float(total_result2[2]):
                 total_result = total_result1
             else:
                 total_result = total_result2
@@ -572,19 +651,24 @@ try:
     PCAcomponents  = sys.argv[index]
 except:
     PCAcomponents = 'max'
-    
+
+if convert_rule_location=='':
+    if seq_number > 6*seq_length:
+        PCA = 'off'
+else:
+    if seq_number > convert_rule.shape[1]*seq_length:
+        PCA = 'off'
+        
 try:
     if PCAcomponents == 'max':
         pass
+    elif PCA == 'off':
+        pass
     else:
-        if convert_rule_location=='':
-            if int(PCAcomponents) > 6*seq_length or int(PCAcomponents) >seq_number:
-                1/0
-        else:
-            if int(PCAcomponents) > convert_rule.shape[1]*seq_length or int(PCAcomponents) >seq_number:
-                1/0
+        if int(PCAcomponents) < seq_number:
+            1/0
 except:
-    print('Please input correct PCAcomponents parament (<=number of the sequences and <= length of reocding sequences)')
+    print('Please input correct PCAcomponents parament (>= number of the sequences)')
     sys.exit(0)
 
 #dis_exponent
@@ -598,10 +682,11 @@ try:
     dis_exponent = float(dis_exponent)
 except:
     print('Please input correct dis_exponent parament (float)')
+    sys.exit(0)
 
 #clustering_method
 try:
-    index = sys.argv.index('-Cmethod')+1
+    index = sys.argv.index('-clustering_method')+1
     clustering_method  = sys.argv[index]
 except:
     clustering_method = 'single'
@@ -611,6 +696,7 @@ try:
         1/0
 except:
     print('Please input correct clustering_method parament (single, average, complete, ward)')
+    sys.exit(0)
 
 #tax_information
 try:
@@ -619,15 +705,19 @@ try:
 except:
     tax_information = ''
 
+
 try:
     if tax_information != '':
-        if list(pd.read_csv(tax_information,header=None)[0]).sort() != seq_id:
+        tax_sort = list(pd.read_csv(tax_information,header=None)[0])
+        tax_sort.sort()
+        if tax_sort != seq_id:
+            print(tax_sort)
             1/0
         else:
             pd.read_csv(tax_information,header=None)[1]
 except:
     print('Please input correct tax_information parament with the same seq id(csv file) [seq_id,clade,subclade,sub-subclade....]')
-            
+    sys.exit(0)       
 #phy_information
 try:
     index = sys.argv.index('-phy_information')+1
@@ -648,10 +738,12 @@ try:
             1/0
 except:
     print('Please input correct phy_information parament with the same seq id (newick format)')
+    sys.exit(0)
+
 
 #clustering_number
 try:
-    index = sys.argv.index('-Cnumber')+1
+    index = sys.argv.index('-clustering_number')+1
     clustering_number  = sys.argv[index]
 except:
     clustering_number = 5
@@ -665,6 +757,7 @@ try:
         int(clustering_number)
 except:
     print('Please input correct clustering_number parament (int)')
+    sys.exit(0)
     
 #bootstrap_cutoff
 try:
@@ -673,11 +766,6 @@ try:
 except:
     bootstrap_cutoff = 90
 
-try:
-    if phy_information == '':
-        1/0
-except:
-    print('Please input correct phy_information parament with the same seq id (newick format)')
 
 try:
     bootstrap_cutoff = float(bootstrap_cutoff)
@@ -685,6 +773,7 @@ try:
         1/0
 except:
     print('Please input correct bootstrap_cutoff parament (0~100)')
+    sys.exit(0)
 
 ####################
 #establish database#
@@ -715,7 +804,8 @@ else:
         result = ML_tree_clustering(ML_tree_location=phy_information,
                                     seq_change_matrix_PCA=seq_change_matrix_PCA,
                                     seq_id=seq_id,
-                                    bootstrap_cutoff=bootstrap_cutoff)
+                                    bootstrap_cutoff=bootstrap_cutoff,
+                                    distance_exponent=dis_exponent)
 
 ##output database
 if output_location[-1] != '/':

@@ -2,19 +2,18 @@
 # -*- coding: utf-8 -*-
 
 '''
-BdPRC_CNS.py
+BdRPC_CNS.py
 
                     Bd-RPC 
 (Bases dependent Rapid Phylogenetic Clustering)
 
-                MAKE DATABASE
+            CLUSTERING NEW SEQUENCES
                                 
                                 Author: Ma Bin
 '''
 
 #####Clustering new sequences function
 def calcuate_bases_frequency(aligned_seq_location):
-    """这是第一个函数"""
     from Bio import SeqIO
     A = []
     C = []
@@ -51,7 +50,7 @@ def calcuate_bases_frequency(aligned_seq_location):
            'Frequency T : '+ str(freq_T))
     return [freq_A,freq_C,freq_G,freq_T],seq_id,sequence_out
 
-def bases_convert (pi, sequence, convert_rule_location = '' ):
+def bases_convert(pi, sequence, convert_rule_location = '' ):
     import numpy as np
     from Bio import SeqIO
     if convert_rule_location == '':
@@ -59,31 +58,6 @@ def bases_convert (pi, sequence, convert_rule_location = '' ):
         C = np.array([0,1,0,0,0,1])* (1-pi[1])
         G = np.array([0,0,1,0,1,0])* (1-pi[2])
         T = np.array([0,0,0,1,0,1])* (1-pi[3])
-        
-        # A = np.array([1,0,0,0,1,0])
-        # C = np.array([0,1,0,0,0,1])
-        # G = np.array([0,0,1,0,1,0])
-        # T = np.array([0,0,0,1,0,1])
-        
-        # A = np.array([1,0,0,0])* (1-pi[0])
-        # C = np.array([0,1,0,0])* (1-pi[1])
-        # G = np.array([0,0,1,0])* (1-pi[2])
-        # T = np.array([0,0,0,1])* (1-pi[3])
-        
-        # A = np.array([1,0,0,0])
-        # C = np.array([0,1,0,0])
-        # G = np.array([0,0,1,0])
-        # T = np.array([0,0,0,1])
-        
-        # A = np.array([1,0,0,0,1,0])* (pi[0])
-        # C = np.array([0,1,0,0,0,1])* (pi[1])
-        # G = np.array([0,0,1,0,1,0])* (pi[2])
-        # T = np.array([0,0,0,1,0,1])* (pi[3])
-        
-        # A = np.array([1,0,0,0])* (pi[0])
-        # C = np.array([0,1,0,0])* (pi[1])
-        # G = np.array([0,0,1,0])* (pi[2])
-        # T = np.array([0,0,0,1])* (pi[3])
     else:
         convert_rule = np.loadtxt(convert_rule_location ,delimiter = ',',encoding = 'utf-8-sig') ###sort by A C G T
         A = convert_rule[0,:]
@@ -103,60 +77,12 @@ def bases_convert (pi, sequence, convert_rule_location = '' ):
     V = (A + C + G)/3
     gap = N = (A + C + G + T)/4
     
-    
+    convert_dict = {'a':A,'c':C,'g':G,'t':T,'-':gap,'r':R,'y':Y,'s':S,'w':W,'k':K,'m':M,'b':B,'d':D,'h':H,'v':V,'n':N}
     seq_change_matrix = []
     
     for i in range(len(sequence)):
-        tmp_seq = []
-        for j in  range(len(sequence[i])):
-            if sequence[i][j] == 'a':
-                tmp_seq.append(A)
-            
-            if sequence[i][j] == 'c':
-                tmp_seq.append(C)
-            
-            if sequence[i][j] == 'g':
-                tmp_seq.append(G)
-            
-            if sequence[i][j] == 't':
-                tmp_seq.append(T)
-            
-            if sequence[i][j] == '-':
-                tmp_seq.append(gap)
-            
-            if sequence[i][j] == 'r':
-                tmp_seq.append(R)
-                    
-            if sequence[i][j] == 'y':
-                tmp_seq.append(Y)
-        
-            if sequence[i][j] == 's':
-                tmp_seq.append(S)
-    
-            if sequence[i][j] == 'w':
-                tmp_seq.append(W)
-    
-            if sequence[i][j] == 'k':
-                tmp_seq.append(K)
-            
-            if sequence[i][j] == 'm':
-                tmp_seq.append(M)
-    
-            if sequence[i][j] == 'b':
-                tmp_seq.append(B)            
-    
-            if sequence[i][j] == 'd':
-                tmp_seq.append(D)
-    
-            if sequence[i][j] == 'h':
-                tmp_seq.append(H)
-    
-            if sequence[i][j] == 'v':
-                tmp_seq.append(V)
-                
-            if sequence[i][j] == 'n':
-                tmp_seq.append(N)
-        
+        tmp_seq = [convert_dict[k] if k in convert_dict else k for k in list(sequence[i])]
+              
         tmp_seq = np.array(tmp_seq)
         tmp_seq = tmp_seq.reshape(1,tmp_seq.shape[0]*tmp_seq.shape[1])
     
@@ -164,9 +90,8 @@ def bases_convert (pi, sequence, convert_rule_location = '' ):
         
     seq_change_matrix = np.array(seq_change_matrix)
     
-    
     return seq_change_matrix,[A,C,G,T]
-
+    
 def PCA_improved(seq_change_matrix,PCA_components = 'max'):
     
     from sklearn.decomposition import PCA
@@ -200,7 +125,7 @@ def add_aligned_sequence(add_seq_location, aligned_seq_location,output_location 
     if output_location == '':
         output_location = aligned_seq_location + '.combine'
         
-    os.system("mafft  --thread %s --add %s --reorder %s > %s" %(thread, add_seq_location, aligned_seq_location, output_location))
+    os.system("mafft  --thread -1 --add %s --reorder %s > %s" %( add_seq_location, aligned_seq_location, output_location))
     
     return 
 
@@ -298,6 +223,7 @@ def clustering_information_tree(database_location,aligned_seq_location,combine_s
     for i in range(len(database)-1,0,-1):
         if float(database[i].split('/')[1]) < float(identity_cutoff):
             database.remove(database[i])
+    
     ####change seqid sequence  order
     ##input combine seq_id sequence
     combine_seq_id = []
@@ -371,28 +297,30 @@ def clustering_information_tree(database_location,aligned_seq_location,combine_s
     clustering_DBsearch_total = []
     for i in range(len(clustering_output)):
         tmp_search_out = []
-        tmp_search_out_total=[]
-        for j in range(len(database)):
+        #tmp_search_out_total=[]
+        for j in range(1,len(database)):
             try:
                 database[j].split('/')[-1].split(',').index(str(clustering_output[i]))
-                tmp_search_out_total.append(database[j].split('/')[0])
+                #tmp_search_out_total.append(database[j].split('/')[0])
                 if clustering_density[i] < density_fold * float(database[j].split('/')[2]):
                     tmp_search_out.append(database[j].split('/')[0])
             except:
                 pass
         clustering_DBsearch_id.append(clustering_id[i])
+        if tmp_search_out == []:
+            tmp_search_out = ['empty']
         clustering_DBsearch.append(tmp_search_out)
-        clustering_DBsearch_total.append(tmp_search_out_total)
+        #clustering_DBsearch_total.append(tmp_search_out_total)
     ######select min-tree 
     clustering_result = []
     for i in range(len(clustering_DBsearch)):
         clustering_result.append([clustering_DBsearch_id[i],clustering_DBsearch[i][-1]])
     
     clustering_result_total = []
-    for i in range(len(clustering_DBsearch)):
-        clustering_result_total.append([clustering_DBsearch_id[i],clustering_DBsearch_total[i][:]])
+    # for i in range(len(clustering_DBsearch)):
+    #     clustering_result_total.append([clustering_DBsearch_id[i],clustering_DBsearch_total[i][:]])
     
-    return [clustering_result,clustering_result_total,clustering_density]
+    return [clustering_result,clustering_result_total,clustering_density,clustering_output]
 
 def add_tree(clustering_result,ML_tree_location,aligned_seq_location,combine_seq_location,threads=1):
     from Bio import SeqIO
@@ -403,6 +331,7 @@ def add_tree(clustering_result,ML_tree_location,aligned_seq_location,combine_seq
     from Bio.SeqRecord import SeqRecord
     from io import StringIO
     import random
+    import numpy as np
     ###def function
     def read_tree(tree,tree_location):
         #tree = tree.clade
@@ -453,6 +382,7 @@ def add_tree(clustering_result,ML_tree_location,aligned_seq_location,combine_seq
                 pass
     #####################
     old_tree = tree
+    time_info = []
     ##merge same tree location 
     for i in range(len(location_list_index)):
         tree_location =location_list_index[i]
@@ -481,12 +411,12 @@ def add_tree(clustering_result,ML_tree_location,aligned_seq_location,combine_seq
             new_tree.root_at_midpoint()
             os.system('rm ./tmp_out.*')
         
-        # Phylo.write(new_tree.clade,'./%s' % tree_location,'newick')
+        Phylo.write(new_tree.clade,'./%s' % tree_location,'newick')
         
-        # new_location = './%s' % tree_location+'.csv'
-        # with open(new_location ,'w') as f:
-        #     for h in range(len(add_seq_id)):
-        #         f.write(str(add_seq_id[h])+'\n')
+        new_location = './%s' % tree_location+'.csv'
+        with open(new_location ,'w') as f:
+            for h in range(len(add_seq_id)):
+                f.write(str(add_seq_id[h])+'\n')
             
         tree_location_change = 'tree'
         for j in range(len(list(tree_location))):
@@ -523,8 +453,7 @@ def add_tree(clustering_result,ML_tree_location,aligned_seq_location,combine_seq
         print(branch_length)
         
         exec(tree_location_change + '.branch_length= %s' % branch_length)
-
-        
+               
     return tree
         
 
@@ -555,7 +484,7 @@ try:
             1/0
     seq_id.sort()
 except:
-    print('Please input aligned sequences')
+    print('Please input correct aligned sequences')
     sys.exit(0)
 
 #output location
@@ -668,12 +597,13 @@ try:
     index = sys.argv.index('-threads')+1
     threads  = sys.argv[index]
 except:
-    threads = 1
+    threads = 'AUTO'
 
 try:
-    threads = int(threads)
+    if threads != 'AUTO':
+        threads = int(threads)
 except:
-    print('Please input correct threads (int, default: 1)')
+    print('Please input correct threads (int or AUTO, default: AUTO)')
     sys.exit(0)    
 
 ##########################
@@ -698,7 +628,7 @@ with open(output_location+'outdatabase.id','w') as f:
         f.write(str(out_seq_id[i])+'\n')
 
 
-clustering_result,clustering_result_total,clustering_density = clustering_information_tree(database_location=database_location+'.match',
+clustering_result,clustering_result_total,clustering_density,clustering_output = clustering_information_tree(database_location=database_location+'.match',
                                                                                            aligned_seq_location=aligned_seq_location,
                                                                                            combine_seq_location=output_location+'combine.fasta',
                                                                                            convert_rule_location=database_location+'.convert',
@@ -707,14 +637,6 @@ clustering_result,clustering_result_total,clustering_density = clustering_inform
                                                                                            density_fold=density_fold)
 
 
-with open(output_location+'clustering_result.csv','w') as f:
-    for i in range(len(clustering_result_total)):
-        f.write(str(clustering_result_total[i][0])+',')
-        for j in range(len(clustering_result_total[i][1])):
-            f.write(str(clustering_result_total[i][1][j])+',')
-        f.write(str(clustering_density[i])+'\n')
-        
-        
 if  phy_information != '':                                                                                                                                                                                 
     try:
         combine_tree = add_tree(clustering_result,
@@ -728,11 +650,20 @@ if  phy_information != '':
     except:
         print('Please check the input database and phylogenetic tree')
 
-
+with open(output_location+'clustering_result.csv','w') as f:
+    for i in range(len(clustering_result)):
+        f.write(str(clustering_result[i][0])+','+str(clustering_result[i][1])+',')
+        # for j in range(len(clustering_result[i][1])):
+        #     f.write(str(clustering_result[i][1][j])+',')
+        f.write(str(clustering_density[i])+'\n')
     
     
+# with open('./tree_time_info.csv','w') as f:
+#     f.write('total,'+str(total_end-total_start)+'\n')
+#     for i in range(len(time_info)):
+#         f.write(str(time_info[i][0])+','+str(time_info[i][1])+','+str(time_info[i][2])+'\n')
 
-
+#np.savetxt('./clustering_output.csv',np.array(clustering_output),delimiter=',')
 
 
 
