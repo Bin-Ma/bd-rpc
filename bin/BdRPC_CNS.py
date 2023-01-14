@@ -411,12 +411,12 @@ def add_tree(clustering_result,ML_tree_location,aligned_seq_location,combine_seq
             new_tree.root_at_midpoint()
             os.system('rm ./tmp_out.*')
         
-        Phylo.write(new_tree.clade,'./%s' % tree_location,'newick')
+        # Phylo.write(new_tree.clade,'./%s' % tree_location,'newick')
         
-        new_location = './%s' % tree_location+'.csv'
-        with open(new_location ,'w') as f:
-            for h in range(len(add_seq_id)):
-                f.write(str(add_seq_id[h])+'\n')
+        # new_location = './%s' % tree_location+'.csv'
+        # with open(new_location ,'w') as f:
+        #     for h in range(len(add_seq_id)):
+        #         f.write(str(add_seq_id[h])+'\n')
             
         tree_location_change = 'tree'
         for j in range(len(list(tree_location))):
@@ -450,7 +450,7 @@ def add_tree(clustering_result,ML_tree_location,aligned_seq_location,combine_seq
         
         branch_length = np.mean(branch)
         
-        print(branch_length)
+        #print(branch_length)
         
         exec(tree_location_change + '.branch_length= %s' % branch_length)
                

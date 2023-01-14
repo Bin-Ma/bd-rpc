@@ -49,14 +49,40 @@ def calcuate_bases_frequency(aligned_seq_location):
            'Frequency T : '+ str(freq_T))
     return [freq_A,freq_C,freq_G,freq_T],seq_id,sequence_out
 
-def bases_convert(pi, sequence, convert_rule_location = '' ):
+def bases_convert(pi, sequence,convert_rule='Method1',convert_rule_location = '' ):
     import numpy as np
     from Bio import SeqIO
     if convert_rule_location == '':
-        A = np.array([1,0,0,0,1,0])* (1-pi[0])
-        C = np.array([0,1,0,0,0,1])* (1-pi[1])
-        G = np.array([0,0,1,0,1,0])* (1-pi[2])
-        T = np.array([0,0,0,1,0,1])* (1-pi[3])
+        if convert_rule =='Method1':
+            A = np.array([1,0,0,0,1,0])* (1-pi[0])
+            C = np.array([0,1,0,0,0,1])* (1-pi[1])
+            G = np.array([0,0,1,0,1,0])* (1-pi[2])
+            T = np.array([0,0,0,1,0,1])* (1-pi[3])
+        elif convert_rule=='Method2':
+            A = np.array([1,0,0,0])* (1-pi[0])
+            C = np.array([0,1,0,0])* (1-pi[1])
+            G = np.array([0,0,1,0])* (1-pi[2])
+            T = np.array([0,0,0,1])* (1-pi[3])
+        elif convert_rule=='Method3':
+            A = np.array([1,0,0,0,1,0])* (pi[0])
+            C = np.array([0,1,0,0,0,1])* (pi[1])
+            G = np.array([0,0,1,0,1,0])* (pi[2])
+            T = np.array([0,0,0,1,0,1])* (pi[3])
+        elif convert_rule=='Method4':
+            A = np.array([1,0,0,0])* (pi[0])
+            C = np.array([0,1,0,0])* (pi[1])
+            G = np.array([0,0,1,0])* (pi[2])
+            T = np.array([0,0,0,1])* (pi[3])
+        elif convert_rule=='Method5':
+            A = np.array([1,0,0,0,1,0])* 1
+            C = np.array([0,1,0,0,0,1])* 1
+            G = np.array([0,0,1,0,1,0])* 1
+            T = np.array([0,0,0,1,0,1])* 1
+        elif convert_rule=='Method6':
+            A = np.array([1,0,0,0])* 1
+            C = np.array([0,1,0,0])* 1
+            G = np.array([0,0,1,0])* 1
+            T = np.array([0,0,0,1])* 1
     else:
         convert_rule = np.loadtxt(convert_rule_location ,delimiter = ',',encoding = 'utf-8-sig') ###sort by A C G T
         A = convert_rule[0,:]
@@ -425,7 +451,7 @@ def select_tree_id(tree):
         tree_id.append(total_tree_id[i].name)
     return tree_id
         
-def ML_tree_clustering(ML_tree_location,seq_change_matrix_PCA,seq_id,max_cluster_number=5,bootstrap_cutoff=90,distance_exponent = 2,clustering_method = 'single'):
+def ML_tree_clustering(ML_tree_location,seq_change_matrix_PCA,seq_id,max_cluster_number=20,bootstrap_cutoff=90,distance_exponent = 2,clustering_method = 'single'):
     
     from Bio import Phylo
     from Bio.Phylo.BaseTree import Tree
@@ -612,6 +638,20 @@ try:
 except:
     print('Please input correct output directory')
     sys.exit(0)
+
+#convert method
+try:
+    index = sys.argv.index('-convert_method')+1
+    convert_rule_location  = sys.argv[index]
+except:
+    convert_rule = ''
+
+if convert_rule == '':
+    pass
+else:
+    if convert_rule not in ['Method1','Method2','Method3','Method4','Method5','Method6']:
+        print('Please input correct recoing method (Method1~6)')
+        sys.exit(0)
 
 #convert matrix
 try:
