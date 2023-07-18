@@ -291,7 +291,6 @@ def information_clustering(seq_change_matrix_PCA,seq_id,distance_exponent = 2, c
         result.append([output_id[i],output_location[i],output_index[i],output_identity[i],output_density[i]])
     return result
 
-   
 def information_clustering_old(seq_change_matrix_PCA,seq_id,distance_exponent = 2, clustering_method = 'single',clustering_information = '',cluster_number = 2):
     ####make Database
     from sklearn.cluster import AgglomerativeClustering
@@ -451,7 +450,7 @@ def select_tree_id(tree):
         tree_id.append(total_tree_id[i].name)
     return tree_id
         
-def ML_tree_clustering(ML_tree_location,seq_change_matrix_PCA,seq_id,max_cluster_number=20,bootstrap_cutoff=90,distance_exponent = 2,clustering_method = 'single'):
+def ML_tree_clustering(ML_tree_location,seq_change_matrix_PCA,seq_id,max_cluster_number=5,bootstrap_cutoff=90,distance_exponent = 2,clustering_method = 'single'):
     
     from Bio import Phylo
     from Bio.Phylo.BaseTree import Tree

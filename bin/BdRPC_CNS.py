@@ -186,6 +186,7 @@ def gap_t_test(add_seq_location, aligned_seq_location, output_location = '',IDfo
     ###distinguish different sequence
     before_test = sum(before_match_information.T)
     out_seq_id = []
+    median_list = []
     for i in range(len(add_seq_id)):
         
         add_seq_information = after_information[after_id.index(add_seq_id[i]),:]
@@ -200,8 +201,12 @@ def gap_t_test(add_seq_location, aligned_seq_location, output_location = '',IDfo
             print (str(add_seq_id[i])+'\t'+'IN Database')
         else:
             print (str(add_seq_id[i])+'\t'+'OUT Database')
+            print (np.median(after_test))
+            print (np.median(before_test))
             out_seq_id.append(add_seq_id[i])
-    return [new_seqid,out_seq_id]
+        
+        median_list.append(np.median(after_test))
+    return [new_seqid,out_seq_id,median_list]
 
 def clustering_information_tree(database_location,aligned_seq_location,combine_seq_location,new_seqid,convert_rule_location,identity_cutoff=0.8,density_fold=1.5):
     from Bio import SeqIO
@@ -350,6 +355,11 @@ def add_tree(clustering_result,ML_tree_location,aligned_seq_location,combine_seq
     tree = Phylo.read(ML_tree_location, 'newick')
     tree.root_at_midpoint()
     tree= tree.clade
+    
+    old_tree = Phylo.read(ML_tree_location, 'newick')
+    old_tree.root_at_midpoint()
+    old_tree= old_tree.clade
+    
     ##input combine seq_id sequence
     combine_seq_id = []
     combine_sequence = []
@@ -366,8 +376,8 @@ def add_tree(clustering_result,ML_tree_location,aligned_seq_location,combine_seq
     for i in range(len(location_list_index)):
         add_seq_id_list.append(list(clustering_result_pd[clustering_result_pd[1]==location_list_index[i]][0]))
     
-    for i in reversed(range(len(location_list_index))):
-        for j in range(len(location_list_index)):
+    for j in reversed(range(len(location_list_index))):
+        for i in range(len(location_list_index)):
             if i == j:
                 continue
             try:
@@ -381,13 +391,13 @@ def add_tree(clustering_result,ML_tree_location,aligned_seq_location,combine_seq
             except:
                 pass
     #####################
-    old_tree = tree
     time_info = []
     ##merge same tree location 
     for i in range(len(location_list_index)):
         tree_location =location_list_index[i]
+        print(tree_location)
         add_seq_id = add_seq_id_list[i]
-        db_seq_id = select_tree_id(read_tree(tree,tree_location))
+        db_seq_id = select_tree_id(read_tree(old_tree,tree_location))
         final_add_seq_id = add_seq_id + db_seq_id
         ##write fasta to make tree
         tmp_out_fasta = []
@@ -453,7 +463,6 @@ def add_tree(clustering_result,ML_tree_location,aligned_seq_location,combine_seq
         #print(branch_length)
         
         exec(tree_location_change + '.branch_length= %s' % branch_length)
-               
     return tree
         
 
@@ -462,7 +471,7 @@ import os
 from Bio import SeqIO
 from Bio import Phylo
 import numpy as np
-
+import pandas as pd
 ####input paraments
 if len(sys.argv) == 1:
     print('Please input the paraments')
@@ -618,7 +627,7 @@ add_aligned_sequence(add_seq_location = addition_seq_location,
                      thread=threads)
 
 
-new_seqid,out_seq_id = gap_t_test(add_seq_location = addition_seq_location,
+new_seqid,out_seq_id,median_list = gap_t_test(add_seq_location = addition_seq_location,
                        aligned_seq_location=aligned_seq_location,
                        IDfold=IDfold,
                        output_location=output_location+'combine.fasta')
@@ -627,6 +636,7 @@ with open(output_location+'outdatabase.id','w') as f:
     for i in range(len(out_seq_id)):
         f.write(str(out_seq_id[i])+'\n')
 
+pd.DataFrame(median_list).to_csv('./median_list.csv',header=None,index=None)
 
 clustering_result,clustering_result_total,clustering_density,clustering_output = clustering_information_tree(database_location=database_location+'.match',
                                                                                            aligned_seq_location=aligned_seq_location,
@@ -638,17 +648,17 @@ clustering_result,clustering_result_total,clustering_density,clustering_output =
 
 
 if  phy_information != '':                                                                                                                                                                                 
-    try:
-        combine_tree = add_tree(clustering_result,
-                        ML_tree_location=phy_information,
-                        aligned_seq_location=aligned_seq_location,
-                        combine_seq_location=output_location+'combine.fasta',
-                        threads=threads
-                        )
-    
-        Phylo.write(combine_tree,output_location+'combined_tree.nwk','newick')
-    except:
-        print('Please check the input database and phylogenetic tree')
+    # try:
+    combine_tree = add_tree(clustering_result,
+                    ML_tree_location=phy_information,
+                    aligned_seq_location=aligned_seq_location,
+                    combine_seq_location=output_location+'combine.fasta',
+                    threads=threads
+                    )
+
+    Phylo.write(combine_tree,output_location+'combined_tree.nwk','newick')
+    # except:
+    #     print('Please check the input database and phylogenetic tree')
 
 with open(output_location+'clustering_result.csv','w') as f:
     for i in range(len(clustering_result)):
