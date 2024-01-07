@@ -50,8 +50,10 @@ Output: Bd-RPC database [cluster_location/identity/density/seq_location]
 
 | Basic options:    |                                                                                                                                                    | 
 |:------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------|
+| -h                | help                                                                                                                                               |
 | -align            | Location of aligned sequences. (required) [no punctuation mark: '/' or ',']                                                                        |
 | -o                | Directory to store the result. (required)                                                                                                          |
+| -convert_method   | Distance calculation methods (six recoded distance metrics, and seventeen uncoded genetic distance metrics from R package "ape")                   |
 | -seq_convert      | Location of convert matrix, the script will use (1-pi,0,0,0,1-pi,0) as default (method 1).                                                         |
 | -PCA [on or off]  | Use PCA program to increase the speed or not. (default: 'on')                                                                                      |
 | -PCAcomponents    | If "-PCA" is on, '-PCAcomponents' can be set as the PCA components. (<=number of the sequences and <= length of recoding sequences) (default: max) |
@@ -72,17 +74,17 @@ Usage:
 Output: gap-t-test result [seq_id in/out] / clustering result [seq_id cluster_name/tree_location] / combined tree
 <br>
 
-| Basic options:   |                                                                                                                           |
-|:-----------------|:--------------------------------------------------------------------------------------------------------------------------|
-| -align           | Location of aligned sequences. (required) [no punctuation mark: '/' or ',']                                               |
-| -new             | Location of new sequences. (required)                                                                                     |
-| -o               | Directory to store the result. (required)                                                                                 |
-| -db              | Location of Bd-RPC database. (required)                                                                                   |
-| -IDfold          | The fold of median value in Indel Test. (default: 1.1)                                                                    |
-| -phy_information | Location of phylogentics tree. (if the tree is available, the new sequences will be inserted into the phylogenetic tree)  |
-| -identity_cutoff | The cutoff value of clusters' identity. (0~1, default: 0.8)                                                               |
-| -density_fold    | The fold of clusters' density for new samples clustering. (default: 1.5)                                                  |
-| -threads         | Threads of mafft align and iqtree. (int, default: 1)                                                                      |
+| Basic options:   |                                                                                                                          |
+|:-----------------|:-------------------------------------------------------------------------------------------------------------------------|
+| -align           | Location of aligned sequences. (required) [no punctuation mark: '/' or ',']                                              |
+| -new             | Location of new sequences. (required)                                                                                    |
+| -o               | Directory to store the result. (required)                                                                                |
+| -db              | Location of Bd-RPC database. (required)                                                                                  |
+| -IDfold          | The fold of median value in Indel Test. (default: 1.1)                                                                   |
+| -phy_information | Location of phylogentics tree. (if the tree is available, the new sequences will be inserted into the phylogenetic tree) |
+| -identity_cutoff | The cutoff value of clusters' identity. (0~1, default: 0.8)                                                              |
+| -density_fold    | The fold of clusters' density for new samples clustering. (default: 1.5)                                                 |
+| -threads         | Threads of mafft align and iqtree. (int, default: auto)                                                                  |
 
 ### Part 3 -- BdRPCpackage
 This is a python package used to perform phylogenetic new sample placement. Users can flexibly combine functions to achieve personalized functionality.
@@ -181,35 +183,68 @@ This is a python package used to perform phylogenetic new sample placement. User
 |:----------------------|:-------------------------------|:----------------------------|
 | clustering_result     | New Sequence Clustering Result | Combined phylogenetic tree. |
 | ML_tree_location      | Phylogenetic tree location.    |                             |
-| aligned_seq_location  | Aligned sequence location.     |                             |
 | combine_seq_location  | Combined sequence location.    |                             |
 | threads               | Threads of the IQ-TREE2        |                             |
 <br>
 
 ## Example
-### Beta-CoV
+### _Betacoronavirus_
 The example data is located in './example/' folder.
-<br><br>
+<br>
 
 #### Make Database 
     cd bd-rpc
 
-    #Taxonomy database (about 5 min)
+    #Taxonomy database
     ./bin/BdRPC_MD.py -align ./example/S_gene_align.fasta -o ./example/ -tax_information ./example/S_gene_taxonomy.csv
 
-    #Phylogentic database (about 5 min)
+    #Phylogentic database
     ./bin/BdRPC_MD.py -align ./example/S_gene_align.fasta -o ./example/ -phy_information ./example/S_gene.nwk
 <br>
 
 #### Clustering New Sequence
-    #Without phylogenetic tree (about 5 min)
+    #Without phylogenetic tree
     ./bin/BdRPC_CNS.py -align ./example/S_gene_align.fasta -new ./example/S_gene_new.fasta -db ./example/database -o ./example/
 
-    #With phylogenetic tree （about 3 hours with 1 thread）
+    #With phylogenetic tree
     ./bin/BdRPC_CNS.py -align ./example/S_gene_align.fasta -new ./example/S_gene_new.fasta -db ./example/database -o ./example/ -phy_information ./example/S_gene.nwk
 <br>
 
-#### Results
+### _Alphacoronavirus_
+The example data is located in './example/Alpha_Cov.zip'.
+<br>
+
+#### Make Database 
+    cd bd-rpc
+    unzip ./example/Alpha_CoV.zip
+
+    #Phylogenetic database
+    ./bin/BdRPC_MD.py ./BdRPC_MD.py -align ./example/ORF1ab_ref.fasta -phy_information ./example/ORF1ab_high_align.fasta.treefile   -o ./
+<br>
+
+#### Clustering New Sequence
+    #With phylogenetic tree
+    ./bin/BdRPC_CNS.py -align ./example/ORF1ab_ref.fasta -new ./example/ORF1ab_test.fasta  -o ./ -db ./database -IDfold 2  -phy_information ./example/ORF1ab_high_align.fasta.treefile
+<br>
+
+###  _Alphaherpesvirinae_
+The example data is located in './example/Alpha_Cov.zip'.
+<br>
+
+#### Make Database 
+    cd bd-rpc
+    unzip ./example/Alpha_her.zip
+
+    #Phylogenetic database
+    ./bin/BdRPC_MD.py ./BdRPC_MD.py -align ./example/her_ref.fasta -phy_information ./example/alpha_her_high_root.treefile   -o ./
+<br>
+
+#### Clustering New Sequence
+    #With phylogenetic tree
+    ./bin/BdRPC_CNS.py -align ./example/her_ref.fasta -new ./example/her_test.fasta  -o ./ -db ./database -IDfold 2  -phy_information ./example/alpha_her_high_root.treefile -convert_method logdet
+<br>
+
+### Results
 * **database.match** <br>
     Database information containing creation information and matching result.<br><br>
 * **database.convert** <br>
@@ -225,8 +260,14 @@ The example data is located in './example/' folder.
 * **combined_tree.nwk** <br>
     Combined phylogenetic tree with new samples.
 
-
-
+## Window system
+Users need to set the R into the environment variables. If the R package "ape" is available, users can select 17 uncoded genetic distance. Here, MAFFT program is necessary for the new sample placement and the IQ-TREE2 is used for phylogenetic tree construction, which users should set into the environment variables previously.
+### linux
+    ./Bd-RPC
+### Mac
+    Double click or ./Bd-RPC
+### Windows
+    Double click or open in Rstudio
 
 
 
