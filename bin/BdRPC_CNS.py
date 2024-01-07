@@ -11,7 +11,6 @@ BdRPC_CNS.py
                                 
                                 Author: Ma Bin
 '''
-
 #####Clustering new sequences function
 def calcuate_bases_frequency(aligned_seq_location):
     from Bio import SeqIO
@@ -208,7 +207,7 @@ def gap_t_test(add_seq_location, aligned_seq_location, output_location = '',IDfo
         median_list.append(np.median(after_test))
     return [new_seqid,out_seq_id,median_list]
 
-def clustering_information_tree(database_location,aligned_seq_location,combine_seq_location,new_seqid,convert_rule_location,identity_cutoff=0.8,density_fold=1.5):
+def clustering_information_tree(database_location,aligned_seq_location,combine_seq_location,new_seqid,convert_rule_location,identity_cutoff=0.8,density_fold=1.5,pdistance=''):
     from Bio import SeqIO
     import numpy as np
     from scipy.spatial.distance import pdist, squareform
@@ -263,27 +262,35 @@ def clustering_information_tree(database_location,aligned_seq_location,combine_s
     #######################################################      
     
     ###convert sequence by database convert matrix
-    seq_change_matrix,convert_matrix= bases_convert(0,sequence = final_sequence,convert_rule_location=convert_rule_location)
-    
-    ###PCA increasing
-    ##PCA_switch PCA_components
-    if PCA_switch == 'PCA_on':
-        seq_change_matrix = PCA_improved(seq_change_matrix,PCA_components)
+    if len(pdistance) != 0:
+        distance_matrix=np.zeros([len(final_seq_id),len(final_seq_id)])
+        for i in range(len(final_seq_id)):
+            for j in range(i+1,len(final_seq_id)):
+                index = list(pdistance['Unnamed: 0']).index(final_seq_id[j])
+                distance_matrix[i,j]=pdistance[final_seq_id[i]][index]
+                distance_matrix[j,i]=pdistance[final_seq_id[i]][index]
     else:
-        pass
-    
-    ###calcuate distance matrix
-    ##distance_exponent
-    if  distance_exponent == 2:
-        distance_matrix = pdist(seq_change_matrix,'euclidean')
-        distance_matrix = squareform(distance_matrix)
-    elif distance_exponent == 1:
-        distance_matrix = pdist(seq_change_matrix,'cityblock')
-        distance_matrix = squareform(distance_matrix)
-    else:
-        distance_matrix = pdist(seq_change_matrix,'minkowski',p=distance_exponent)
-        distance_matrix = squareform(distance_matrix)
+        seq_change_matrix,convert_matrix= bases_convert(0,sequence = final_sequence,convert_rule_location=convert_rule_location)
         
+        ###PCA increasing
+        ##PCA_switch PCA_components
+        if PCA_switch == 'PCA_on':
+            seq_change_matrix = PCA_improved(seq_change_matrix,PCA_components)
+        else:
+            pass
+        
+        ###calcuate distance matrix
+        ##distance_exponent
+        if  distance_exponent == 2:
+            distance_matrix = pdist(seq_change_matrix,'euclidean')
+            distance_matrix = squareform(distance_matrix)
+        elif distance_exponent == 1:
+            distance_matrix = pdist(seq_change_matrix,'cityblock')
+            distance_matrix = squareform(distance_matrix)
+        else:
+            distance_matrix = pdist(seq_change_matrix,'minkowski',p=distance_exponent)
+            distance_matrix = squareform(distance_matrix)
+            
     ####clustering new sequence
     database_cutoff = len(seq_id)
     clustering_output = []
@@ -472,6 +479,21 @@ from Bio import SeqIO
 from Bio import Phylo
 import numpy as np
 import pandas as pd
+import argparse
+
+####parament set
+parser = argparse.ArgumentParser()
+parser.add_argument('-align',help="Location of aligned sequences. (required) [no punctuation mark: '/' or ',']")
+parser.add_argument('-db',help="Location of Bd-RPC database. (required)")
+parser.add_argument('-new',help="Location of new sequences. (required)")
+parser.add_argument('-o',help="Directory to store the result. (required)")
+parser.add_argument('-IDfold',help="The fold of median value in Indel Test. (default: 1.1)")
+parser.add_argument('-phy_information',help="Location of phylogentics tree. (if the tree is available, the new sequences will be inserted into the phylogenetic tree)")
+parser.add_argument('-identity_cutoff',help="The cutoff value of clusters' identity. (0~1, default: 0.8)")
+parser.add_argument('-density_fold',help="The fold of clusters' density for new samples clustering. (default: 1.5)")
+parser.add_argument('-threads',help="Threads of mafft align and iqtree. (int, default: 1)")
+parser.parse_args()
+
 ####input paraments
 if len(sys.argv) == 1:
     print('Please input the paraments')
@@ -519,7 +541,20 @@ try:
 except:
     print('Please input correct new sequences location (fasta format)')
     sys.exit(0)
-
+    
+#combine sequences
+try:
+    index = sys.argv.index('-combine')+1
+    combine_location  = sys.argv[index]
+    combine_seqid = []
+    for seq_record in SeqIO.parse(combine_location, 'fasta'):
+        combine_seqid.append(seq_record.id)
+    if len(combine_seqid) != len(seq_id)+len(new_seqid):
+        combine_location = ''
+        print('Combine aligned sequences are not correct. The Mafft will be used to aligned the sequences.')
+except:
+    combine_location = ''
+    print('Combine aligned sequences are not correct. The Mafft will be used to aligned the sequences.')
 #database location
 try:
     index = sys.argv.index('-db')+1
@@ -530,11 +565,11 @@ try:
             i = i.split('\n')
             database.append(i[0])
     
-    PCA_switch = database[0].split(',')[0].split('/')[0]
+    PCA_switch = database[0].split('/')[0]
     PCA_components = database[0].split(',')[0].split('/')[1]
     distance_exponent = float(database[0].split(',')[1])
     
-    convert_rule = np.loadtxt(database_location+'.convert' ,delimiter = ',',encoding = 'utf-8-sig') ###sort by A C G T
+    # convert_rule = np.loadtxt(database_location+'.convert' ,delimiter = ',',encoding = 'utf-8-sig') ###sort by A C G T
 except:
     print('Please input correct database location (ps: /../../database)')
     sys.exit(0)
@@ -620,17 +655,18 @@ except:
 ##########################
 if output_location[-1] != '/':
     output_location = output_location+'/'
-    
-add_aligned_sequence(add_seq_location = addition_seq_location,
-                     aligned_seq_location=aligned_seq_location,
-                     output_location=output_location+'combine.fasta',
-                     thread=threads)
 
+if len(combine_location) == 0:
+    add_aligned_sequence(add_seq_location = addition_seq_location,
+                         aligned_seq_location=aligned_seq_location,
+                         output_location=output_location+'combine.fasta',
+                         thread=threads)
+    combine_location = output_location+'combine.fasta'
 
 new_seqid,out_seq_id,median_list = gap_t_test(add_seq_location = addition_seq_location,
                        aligned_seq_location=aligned_seq_location,
                        IDfold=IDfold,
-                       output_location=output_location+'combine.fasta')
+                       output_location=combine_location)
 
 with open(output_location+'outdatabase.id','w') as f:
     for i in range(len(out_seq_id)):
@@ -638,21 +674,52 @@ with open(output_location+'outdatabase.id','w') as f:
 
 pd.DataFrame(median_list).to_csv('./median_list.csv',header=None,index=None)
 
+database = []
+with open(database_location +'.match','r') as f:
+    for i in f.readlines():
+        i = i.split('\n')
+        database.append(i[0])
+        
+if  database[0].split(',')[2] != '':
+    convert_rule =  database[0].split(',')[2]
+    convert_rule_location = ''
+    
+    from rpy2.robjects import r as Rcode
+    from rpy2.robjects.packages import importr as Rrequire
+    Rrequire('ape')
+    Rcode("align <- read.dna('%s',format = 'fasta')" % combine_location)
+
+    Rcode("distance <- dist.dna(align,as.matrix = T,model = '%s')" % convert_rule)
+
+    Rcode("write.csv(file = './p_distance_combine.csv',distance)")
+    
+    pdistance = pd.read_csv('./p_distance_combine.csv')
+    
+else:
+    convert_rule_location = database_location+'.convert'
+    pdistance = ''
+
 clustering_result,clustering_result_total,clustering_density,clustering_output = clustering_information_tree(database_location=database_location+'.match',
                                                                                            aligned_seq_location=aligned_seq_location,
-                                                                                           combine_seq_location=output_location+'combine.fasta',
-                                                                                           convert_rule_location=database_location+'.convert',
+                                                                                           combine_seq_location=combine_location,
+                                                                                           convert_rule_location=convert_rule_location,
                                                                                            new_seqid=new_seqid,
                                                                                            identity_cutoff=identity_cutoff,
-                                                                                           density_fold=density_fold)
+                                                                                           density_fold=density_fold,
+                                                                                           pdistance = pdistance)
 
+with open(output_location+'clustering_result.csv','w') as f:
+    for i in range(len(clustering_result)):
+        f.write(str(clustering_result[i][0])+',')
+        f.write(str(clustering_result[i][1])+',')
+        f.write(str(clustering_density[i])+'\n')
 
 if  phy_information != '':                                                                                                                                                                                 
     # try:
     combine_tree = add_tree(clustering_result,
                     ML_tree_location=phy_information,
                     aligned_seq_location=aligned_seq_location,
-                    combine_seq_location=output_location+'combine.fasta',
+                    combine_seq_location=combine_location,
                     threads=threads
                     )
 
@@ -660,12 +727,7 @@ if  phy_information != '':
     # except:
     #     print('Please check the input database and phylogenetic tree')
 
-with open(output_location+'clustering_result.csv','w') as f:
-    for i in range(len(clustering_result)):
-        f.write(str(clustering_result[i][0])+','+str(clustering_result[i][1])+',')
-        # for j in range(len(clustering_result[i][1])):
-        #     f.write(str(clustering_result[i][1][j])+',')
-        f.write(str(clustering_density[i])+'\n')
+
     
     
 # with open('./tree_time_info.csv','w') as f:
@@ -673,7 +735,7 @@ with open(output_location+'clustering_result.csv','w') as f:
 #     for i in range(len(time_info)):
 #         f.write(str(time_info[i][0])+','+str(time_info[i][1])+','+str(time_info[i][2])+'\n')
 
-#np.savetxt('./clustering_output.csv',np.array(clustering_output),delimiter=',')
+# np.savetxt('./clustering_output.csv',np.array(clustering_output),delimiter=',')
 
 
 

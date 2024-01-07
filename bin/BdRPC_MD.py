@@ -51,8 +51,13 @@ def calcuate_bases_frequency(aligned_seq_location):
 
 def bases_convert(pi, sequence,convert_rule='Method1',convert_rule_location = '' ):
     import numpy as np
-    from Bio import SeqIO
-    if convert_rule_location == '':
+    from Bio import SeqIO 
+    if convert_rule_location == '' and convert_rule == '':
+        A = np.array([1,0,0,0,1,0])* (1-pi[0])
+        C = np.array([0,1,0,0,0,1])* (1-pi[1])
+        G = np.array([0,0,1,0,1,0])* (1-pi[2])
+        T = np.array([0,0,0,1,0,1])* (1-pi[3])
+    elif convert_rule_location == '':
         if convert_rule =='Method1':
             A = np.array([1,0,0,0,1,0])* (1-pi[0])
             C = np.array([0,1,0,0,0,1])* (1-pi[1])
@@ -138,23 +143,30 @@ def PCA_improved(seq_change_matrix,PCA_components = 'max'):
     
     return seq_change_matrix_PCA
 
-    
-def information_clustering(seq_change_matrix_PCA,seq_id,distance_exponent = 2, clustering_method = 'single',clustering_information = '',cluster_number = 2):
+def information_clustering(seq_change_matrix_PCA,seq_id,distance_exponent = 2, clustering_method = 'single',clustering_information = '',cluster_number = 2, pdistance = ''):
     ####make Database
     from sklearn.cluster import AgglomerativeClustering
     from scipy.spatial.distance import pdist, squareform
     import numpy as np 
     import pandas as pd
     ####calcuate distance matrix
-    if  distance_exponent == 2:
-        distance_matrix = pdist(seq_change_matrix_PCA,'euclidean')
-        distance_matrix = squareform(distance_matrix)
-    elif distance_exponent == 1:
-        distance_matrix = pdist(seq_change_matrix_PCA,'cityblock')
-        distance_matrix = squareform(distance_matrix)
+    if len(pdistance) != 0:
+        distance_matrix=np.zeros([len(seq_id),len(seq_id)])
+        for i in range(len(seq_id)):
+            for j in range(i+1,len(seq_id)):
+                index = list(pdistance['Unnamed: 0']).index(seq_id[j])
+                distance_matrix[i,j]=pdistance[seq_id[i]][index]
+                distance_matrix[j,i]=pdistance[seq_id[i]][index]
     else:
-        distance_matrix = pdist(seq_change_matrix_PCA,'minkowski',p=distance_exponent)
-        distance_matrix = squareform(distance_matrix)
+        if  distance_exponent == 2:
+            distance_matrix = pdist(seq_change_matrix_PCA,'euclidean')
+            distance_matrix = squareform(distance_matrix)
+        elif distance_exponent == 1:
+            distance_matrix = pdist(seq_change_matrix_PCA,'cityblock')
+            distance_matrix = squareform(distance_matrix)
+        else:
+            distance_matrix = pdist(seq_change_matrix_PCA,'minkowski',p=distance_exponent)
+            distance_matrix = squareform(distance_matrix)
     ####
         
         
@@ -174,6 +186,7 @@ def information_clustering(seq_change_matrix_PCA,seq_id,distance_exponent = 2, c
             output_id.append('cluster%s' % i)
             output_location.append(np.where(clustering.labels_==i))
             output_identity.append(1)
+            output_index.append(0)
             output_density.append(np.max(distance_matrix[np.where(clustering.labels_==i)[0],:][:,np.where(clustering.labels_==i)[0]]))
     
     else:
@@ -450,7 +463,7 @@ def select_tree_id(tree):
         tree_id.append(total_tree_id[i].name)
     return tree_id
         
-def ML_tree_clustering(ML_tree_location,seq_change_matrix_PCA,seq_id,max_cluster_number=5,bootstrap_cutoff=90,distance_exponent = 2,clustering_method = 'single'):
+def ML_tree_clustering(ML_tree_location,seq_change_matrix_PCA,seq_id,max_cluster_number=5,bootstrap_cutoff=90,distance_exponent = 2,clustering_method = 'single',pdistance = ''):
     
     from Bio import Phylo
     from Bio.Phylo.BaseTree import Tree
@@ -574,16 +587,25 @@ def ML_tree_clustering(ML_tree_location,seq_change_matrix_PCA,seq_id,max_cluster
     ##mid point
     tree.root_at_midpoint()
     
-    ####calcuate distance matrix
-    if  distance_exponent == 2:
-        distance_matrix = pdist(seq_change_matrix_PCA,'euclidean')
-        distance_matrix = squareform(distance_matrix)
-    elif distance_exponent == 1:
-        distance_matrix = pdist(seq_change_matrix_PCA,'cityblock')
-        distance_matrix = squareform(distance_matrix)
+    ####calcuate distance matrix    
+    if len(pdistance) != 0:
+        distance_matrix=np.zeros([len(seq_id),len(seq_id)])
+        for i in range(len(seq_id)):
+            for j in range(i+1,len(seq_id)):
+                index = list(pdistance['Unnamed: 0']).index(seq_id[j])
+                distance_matrix[i,j]=pdistance[seq_id[i]][index]
+                distance_matrix[j,i]=pdistance[seq_id[i]][index]
     else:
-        distance_matrix = pdist(seq_change_matrix_PCA,'minkowski',p=distance_exponent)
-        distance_matrix = squareform(distance_matrix)
+        if  distance_exponent == 2:
+            distance_matrix = pdist(seq_change_matrix_PCA,'euclidean')
+            distance_matrix = squareform(distance_matrix)
+        elif distance_exponent == 1:
+            distance_matrix = pdist(seq_change_matrix_PCA,'cityblock')
+            distance_matrix = squareform(distance_matrix)
+        else:
+            distance_matrix = pdist(seq_change_matrix_PCA,'minkowski',p=distance_exponent)
+            distance_matrix = squareform(distance_matrix)
+
     ####
     search_tree(tree.clade[0],distance_matrix=distance_matrix,seq_id=seq_id,location='0',bootstrap_cutoff=bootstrap_cutoff,clustering_method=clustering_method)
     search_tree(tree.clade[1],distance_matrix=distance_matrix,seq_id=seq_id,location='1',bootstrap_cutoff=bootstrap_cutoff,clustering_method=clustering_method)
@@ -602,6 +624,23 @@ from Bio import SeqIO
 from Bio import Phylo
 import numpy as np
 import pandas as pd
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-align',help="Location of aligned sequences. (required) [no punctuation mark: '/' or ',']")
+parser.add_argument('-o',help="Directory to store the result. (required)")
+parser.add_argument('-convert_method',help="Select the recoding method from Method 1 to Method 6, and the distance estimated methods designed by the R package('ape') [raw, N, TS, TV, JC69, K80,F81, K81, F84, BH87, T92, TN93, GG95, logdet, paralin, indel, indelblock] (default: 'Method1')")
+parser.add_argument('-seq_convert',help="Location of convert matrix, the script will use (1-pi,0,0,0,1-pi,0) as default (Method 1).")
+parser.add_argument('-PCA',help="Use PCA program to increase the speed or not [on or off]. (default: 'on')")
+parser.add_argument('-PCAcomponents',help="If '-PCA' is on, '-PCAcomponents' can be set as the PCA components. (<=number of the sequences and <= length of recoding sequences) (default: max)")
+parser.add_argument('-dis_exponent',help="The exponent of minkowski distance. (default: 2)")
+parser.add_argument('-Cmethod',help="The method of hierarchical clustering. (single, average, complete, ward) (default: single)")
+parser.add_argument('-tax_information',help="The location of sequences taxonomy information. (csv file) [seq_id,clade,subclade,sub-subclade....] [no punctuation mark: '/' or ',']")
+parser.add_argument('-phy_information',help="The location of tree with newick format. [no punctuation mark: '/' or ',']")
+parser.add_argument('-Cnumber',help="If '-tax_information and -phy_information' not apply, the numebr of cluster will be calcuated without identity. (default: 5)")
+parser.add_argument('-bootstrap_cutoff',help="The cutoff value to stop the tree traversal. (default: 90)")
+parser.parse_args()
+
 
 ####input paraments
 if len(sys.argv) == 1:
@@ -641,15 +680,18 @@ except:
 #convert method
 try:
     index = sys.argv.index('-convert_method')+1
-    convert_rule_location  = sys.argv[index]
+    convert_rule  = sys.argv[index]
 except:
     convert_rule = ''
 
 if convert_rule == '':
     pass
 else:
-    if convert_rule not in ['Method1','Method2','Method3','Method4','Method5','Method6']:
-        print('Please input correct recoing method (Method1~6)')
+    if convert_rule not in ['Method1','Method2','Method3','Method4','Method5','Method6',
+                            "raw", "N", "TS", "TV", "JC69", "K80","F81", "K81", "F84", 
+                            "BH87", "T92", "TN93", "GG95", "logdet", "paralin", "indel",
+                            "indelblock"]:
+        print('Please input correct recoing method')
         sys.exit(0)
 
 #convert matrix
@@ -663,7 +705,7 @@ try:
     if convert_rule_location == '':
         pass
     else:
-        convert_rule = np.loadtxt(convert_rule_location ,delimiter = ',',encoding = 'utf-8-sig') ###sort by A C G T
+        # convert_rule = np.loadtxt(convert_rule_location ,delimiter = ',',encoding = 'utf-8-sig') ###sort by A C G T
         if convert_rule.shape[0] != 4:
             1/0
 except:
@@ -725,7 +767,7 @@ except:
 
 #clustering_method
 try:
-    index = sys.argv.index('-clustering_method')+1
+    index = sys.argv.index('-Cmethod')+1
     clustering_method  = sys.argv[index]
 except:
     clustering_method = 'single'
@@ -782,7 +824,7 @@ except:
 
 #clustering_number
 try:
-    index = sys.argv.index('-clustering_number')+1
+    index = sys.argv.index('-Cnumber')+1
     clustering_number  = sys.argv[index]
 except:
     clustering_number = 5
@@ -817,13 +859,53 @@ except:
 ####################
 #establish database#
 ####################
+
+##tmp test
+# aligned_seq_location= '/Users/mabin/Documents/bd-rpc/example/S_gene_align.fasta'
+# convert_rule_location = ''
+# PCAcomponents='max'
+# dis_exponent = 2
+# clustering_method='single'
+# phy_information = '/Users/mabin/Documents/bd-rpc/example/S_gene.nwk'
+# phy_information = ''
+# clustering_number=10
+# bootstrap_cutoff=90
+# tax_information = '/Users/mabin/Documents/bd-rpc/example/S_gene_taxonomy.csv'
+# PCA='on'
+# convert_rule = 'K80'
+
 pi,seq_id,sequence= calcuate_bases_frequency(aligned_seq_location)       
 
-seq_change_matrix,convert_matrix= bases_convert(pi,sequence,convert_rule_location= convert_rule_location)
-if PCA == 'on':
-    seq_change_matrix_PCA = PCA_improved(seq_change_matrix,PCA_components=PCAcomponents)
+if convert_rule == '':  
+    seq_change_matrix,convert_matrix= bases_convert(pi,sequence,convert_rule_location= convert_rule_location,convert_rule=convert_rule)
+    if PCA == 'on':
+        seq_change_matrix_PCA = PCA_improved(seq_change_matrix,PCA_components=PCAcomponents)
+    else:
+        seq_change_matrix_PCA = seq_change_matrix
+    pdistance=''
+    convert_rule=''
+elif len(convert_rule.split('thod')) == 2:
+    seq_change_matrix,convert_matrix= bases_convert(pi,sequence,convert_rule_location= convert_rule_location,convert_rule=convert_rule)
+    if PCA == 'on':
+        seq_change_matrix_PCA = PCA_improved(seq_change_matrix,PCA_components=PCAcomponents)
+    else:
+        seq_change_matrix_PCA = seq_change_matrix
+    pdistance=''
+    convert_rule= ''
 else:
-    seq_change_matrix_PCA = seq_change_matrix
+    from rpy2.robjects import r as Rcode
+    from rpy2.robjects.packages import importr as Rrequire
+    Rrequire('ape')
+
+    Rcode("align <- read.dna('%s',format = 'fasta')" % aligned_seq_location)
+
+    Rcode("distance <- dist.dna(align,as.matrix = T,model = '%s')" % convert_rule)
+
+    Rcode("write.csv(file = './p_distance.csv',distance)")
+    
+    pdistance = pd.read_csv('./p_distance.csv')
+    
+    seq_change_matrix_PCA = ''
 
 
 if tax_information != '':    
@@ -831,26 +913,29 @@ if tax_information != '':
                                     seq_id,distance_exponent=dis_exponent,
                                     clustering_method=clustering_method,
                                     clustering_information=tax_information,
-                                    cluster_number = clustering_number)
+                                    cluster_number = clustering_number,
+                                    pdistance=pdistance)
 else:
     if phy_information=='':
         result = information_clustering(seq_change_matrix_PCA,
                                     seq_id,distance_exponent=dis_exponent,
                                     clustering_method=clustering_method,
                                     clustering_information=tax_information,
-                                    cluster_number = clustering_number)
+                                    cluster_number = clustering_number,
+                                    pdistance=pdistance)
     else:
         result = ML_tree_clustering(ML_tree_location=phy_information,
                                     seq_change_matrix_PCA=seq_change_matrix_PCA,
                                     seq_id=seq_id,
                                     bootstrap_cutoff=bootstrap_cutoff,
-                                    distance_exponent=dis_exponent)
+                                    distance_exponent=dis_exponent,
+                                    pdistance = pdistance)
 
 ##output database
 if output_location[-1] != '/':
     output_location = output_location+'/'
 with open(output_location+'database.match','w') as f:
-    f.write(str(PCA)+'/'+str(PCAcomponents)+','+str(dis_exponent)+'\n')
+    f.write(str(PCA)+'/'+str(PCAcomponents)+','+str(dis_exponent)+','+convert_rule+'\n')
     for i in range (len(result)):
         seq_id = result[i][0]
         identity = result[i][3]
@@ -862,21 +947,12 @@ with open(output_location+'database.match','w') as f:
             f.write(str(seq_location[j])+',')
         f.write('\n')
 
-np.savetxt(output_location+'database.convert',convert_matrix,delimiter=',')
+if convert_rule != '' and len(convert_rule.split('thod')) == 1:
+    pass
+else:
+    np.savetxt(output_location+'database.convert',convert_matrix,delimiter=',')
 
         
-        
-        
-
-
-
-
-
-
-
-
-
-
 
 
 
