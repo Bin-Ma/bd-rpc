@@ -149,7 +149,7 @@ with open(output_result,'w') as f:
     for i in range(len(total_seq_info)):
         f.write('>'+total_seq_info[i][0]+'\n'+str(total_seq_info[i][1])+'\n')
         
-output_NA = output_location+'NA_strain.fasta'
+output_NA = output_location+'NA_strain.info'
 if len(out_seq_info) == 0:
     pass
 else:
