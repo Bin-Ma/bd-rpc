@@ -187,6 +187,24 @@ This is a python package used to perform phylogenetic new sample placement. User
 | threads               | Threads of the IQ-TREE2        |                             |
 <br>
 
+### Part 4 -- Bd-RPCE (Split High Methylation Genes of E. coli)
+BdRPCE.py<br><br>
+Usage:
+
+    BdRPC_CNS.py [options] -in <location> -o <location>
+
+Output: HMGgene.fasta and NA_strain.info
+<br>
+| Input   | Description                    |
+|:----------------------|:-------------------------------|
+| -in     | E. coli complete sequence | 
+| -o      | Output location   |    
+| -identity  | Blastn identity cutoff |  
+| -cover  | Blastn coverage cutoff  |     
+| threads      | Threads of Blastn     |      
+
+<br>
+
 ## Example
 ### _Betacoronavirus_
 The example data is located in './example/' folder.
